@@ -1,6 +1,7 @@
 import numpy as np
 import pyxdf
 import os
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 class BocciaDataAnalysis:
     def __init__(self, folder_path, stream_name):
@@ -18,7 +19,7 @@ class BocciaDataAnalysis:
         self.python_response_markers = None
         self.python_response_time = None
 
-        self.percent_correct_list = []
+        self.prediction_accuracies = []
     
     def retrieve_files(self):
         with os.scandir(self.folder_path) as entries:
@@ -42,7 +43,6 @@ class BocciaDataAnalysis:
 
         # Compare predicted targets to actual targets
         self.compare_predictions(predicted_targets, target_element_iSPOs)
-        
     
     def get_stream_data(self, streams, stream_name):
         stream_index = next((i for i, stream in enumerate(streams) if stream_name in stream['info']['name'][0]), None)
@@ -72,20 +72,18 @@ class BocciaDataAnalysis:
         # Make sure number of predictions matches number of actual targets
         assert len(predicted_targets) == len(target_element_iSPOs)
 
-        # Determine number of correct predictions
-        num_correct = 0
-        num_total = len(predicted_targets)
-        for i in range(num_total):
-            if predicted_targets[i] == target_element_iSPOs[i]:
-                num_correct += 1
+        # Convert to binary classification: 1 if match, 0 if mismatch
+        binary_preds = [1 if pred == true else 0 for pred, true in zip(predicted_targets, target_element_iSPOs)]
+        binary_truths = [1] * len(target_element_iSPOs)  # All actual targets are correct
 
-        percent_correct = (num_correct / num_total) * 100
+        # Compute confusion matrix
+        cm = confusion_matrix(binary_truths, binary_preds, labels=[1, 0])
+        accuracy = accuracy_score(binary_truths, binary_preds) * 100
 
-        print(f"Number of correct predictions: {num_correct}")
-        print(f"Number of total predictions: {num_total}")
-        print(f"Percentage correct: {percent_correct:.2f}%\n")
-
-        self.percent_correct_list.append(percent_correct)
+        print("Confusion Matrix:")
+        print(cm)
+        print(f"Accuracy: {accuracy:.2f}%\n")
+        self.prediction_accuracies.append(accuracy)
 
 def main():
     folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250407_Participant_1_Data/EEG_Data" # Path to the folder containing the data
@@ -98,9 +96,9 @@ def main():
         print("Trial " + str(count) + " results:")
         boccia_data_analysis.process_streams(file)
 
-    print("Percent correct predictions: ")
-    for i in range(len(boccia_data_analysis.percent_correct_list)):
-        print(f"Trial {i+1}: {boccia_data_analysis.percent_correct_list[i]:.2f}%")
+    print("Prediction Accuracies: ")
+    for i in range(len(boccia_data_analysis.prediction_accuracies)):
+        print(f"Trial {i+1}: {boccia_data_analysis.prediction_accuracies[i]:.2f}%")
 
 if __name__ == "__main__":
     main()
