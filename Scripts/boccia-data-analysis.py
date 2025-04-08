@@ -3,11 +3,11 @@ import pyxdf
 import os
 
 class BocciaDataAnalysis:
-    def __init__(self, folder_path):
+    def __init__(self, folder_path, stream_name):
         self.folder_path = folder_path
         self.files = self.retrieve_files()
 
-        self.target_stream_name = "TargetElementStream_VirtualPlay"
+        self.target_stream_name = stream_name
         self.python_response_stream_name = "PythonResponse"
 
         # Initialize target element stream variables
@@ -17,6 +17,8 @@ class BocciaDataAnalysis:
         # Initialize python response stream variables
         self.python_response_markers = None
         self.python_response_time = None
+
+        self.percent_correct_list = []
     
     def retrieve_files(self):
         with os.scandir(self.folder_path) as entries:
@@ -29,7 +31,7 @@ class BocciaDataAnalysis:
 
         # Get data from streams of interest
         self.target_markers, self.target_time = self.get_stream_data(streams, self.target_stream_name)
-        print(self.target_markers)
+        # print(self.target_markers)
         self.python_response_markers, self.python_response_time = self.get_stream_data(streams, self.python_response_stream_name)
 
         # Get list of actual target elements
@@ -83,16 +85,22 @@ class BocciaDataAnalysis:
         print(f"Number of total predictions: {num_total}")
         print(f"Percentage correct: {percent_correct:.2f}%\n")
 
-def main():
-    folder_path = "D:/Daniella Bourque/3-28_Testing_Data" # Path to the folder containing the data
+        self.percent_correct_list.append(percent_correct)
 
-    boccia_data_analysis = BocciaDataAnalysis(folder_path)
+def main():
+    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250407_Participant_1_Data/EEG_Data" # Path to the folder containing the data
+    target_stream_name = "TargetElementStream_VirtualPlay"
+    boccia_data_analysis = BocciaDataAnalysis(folder_path, target_stream_name)
 
     count = 0
     for file in boccia_data_analysis.files:
         count += 1
         print("Trial " + str(count) + " results:")
         boccia_data_analysis.process_streams(file)
+
+    print("Percent correct predictions: ")
+    for i in range(len(boccia_data_analysis.percent_correct_list)):
+        print(f"Trial {i+1}: {boccia_data_analysis.percent_correct_list[i]:.2f}%")
 
 if __name__ == "__main__":
     main()
