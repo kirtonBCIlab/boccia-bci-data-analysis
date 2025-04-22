@@ -1,12 +1,19 @@
 import numpy as np
 import pyxdf
 import os
+import re
+import json
 from sklearn.metrics import confusion_matrix, accuracy_score
 
 class BocciaDataAnalysis:
     def __init__(self, folder_path, stream_name):
         self.folder_path = folder_path
-        self.files = self.retrieve_files()
+        self.eeg_files = None
+        self.trial_settings_files = None
+        self.trial_data = self.get_trial_data()
+
+        self.print_confusion_matrix = True
+        self.trial_count = 0
 
         self.target_stream_name = stream_name
         self.python_response_stream_name = "PythonResponse"
@@ -19,12 +26,64 @@ class BocciaDataAnalysis:
         self.python_response_markers = None
         self.python_response_time = None
 
+        self.trial_ID_dict = self.initialize_trial_dict()
+
         self.prediction_accuracies = []
+        self.trial_IDs = []
+
+    def initialize_trial_dict(self):
+        trial_dict = {
+            1: "Fan segments 7x5",
+            2: "Fan segments 3x3",
+            3: "Solid color stimulus",
+            4: "Gradient stimulus",
+            5: "Face sprite stimulus",
+            6: "Separate buttons",
+        }
+        return trial_dict
     
-    def retrieve_files(self):
+    def get_trial_data(self):
+        self.eeg_files = self.retrieve_eeg_files()
+        self.trial_settings_files = self.retrieve_trial_settings_files()
+        
+        trial_data = {}
+        for trial_number in sorted(set(self.eeg_files.keys()) & set(self.trial_settings_files.keys())):
+            trial_data[trial_number] = {
+                "eeg_data": self.eeg_files[trial_number],
+                "trial_settings": self.trial_settings_files[trial_number]
+            }
+
+        return trial_data
+    
+    def retrieve_eeg_files(self):
+        eeg_files = {}
         with os.scandir(self.folder_path) as entries:
-            files = [entry.path for entry in entries if entry.is_file() and entry.name.endswith(".xdf")]
-        return files
+            for entry in entries:
+                if entry.is_file() and entry.name.endswith(".xdf"):
+                    match = re.search(r'run-(\d{3})', entry.name)
+                    if match:
+                        trial_number = int(match.group(1))
+                        eeg_files[trial_number] = entry.path
+        return eeg_files
+    
+    def retrieve_trial_settings_files(self):
+        trial_settings = {}
+        with os.scandir(self.folder_path) as entries:
+            for entry in entries:
+                if entry.is_file() and entry.name.endswith(".json"):
+                    match = re.search(r'Trial_(\d+)', entry.name)
+                    if match:
+                        trial_number = int(match.group(1))
+                        trial_settings[trial_number] = entry.path
+        return trial_settings
+    
+    def process_trial(self, trial_number):
+        xdf_file = self.trial_data[trial_number]["eeg_data"]
+        self.process_streams(xdf_file)
+
+        settings_file = self.trial_data[trial_number]["trial_settings"]
+        trial_ID = self.process_settings(settings_file)
+        self.trial_IDs.append(trial_ID)
     
     def process_streams(self, xdf_file):
         # Load the xdf file
@@ -46,7 +105,7 @@ class BocciaDataAnalysis:
     
     def get_stream_data(self, streams, stream_name):
         stream_index = next((i for i, stream in enumerate(streams) if stream_name in stream['info']['name'][0]), None)
-        print(f"Stream {stream_index}: {streams[stream_index]['info']['name'][0]}")
+        # print(f"Stream {stream_index}: {streams[stream_index]['info']['name'][0]}")
         stream = streams[stream_index]
 
         stream_markers = stream['time_series']
@@ -80,25 +139,70 @@ class BocciaDataAnalysis:
         cm = confusion_matrix(binary_truths, binary_preds, labels=[1, 0])
         accuracy = accuracy_score(binary_truths, binary_preds) * 100
 
-        print("Confusion Matrix:")
-        print(cm)
-        print(f"Accuracy: {accuracy:.2f}%\n")
+        if self.print_confusion_matrix:
+            self.trial_count += 1
+            print(f"Trial {self.trial_count} confusion matrix:")
+            print(cm)
+            print(f"Accuracy: {accuracy:.2f}%\n")
+
         self.prediction_accuracies.append(accuracy)
 
+    def process_settings(self, settings_file):
+        with open(settings_file, 'r') as f:
+            # Load the JSON file
+            settings = json.load(f)
+            # Get the relevant settings
+            num_cols = settings["coarseFanSettings"]["_nColumns"]
+            num_rows = settings["coarseFanSettings"]["_nRows"]
+            stim_type = settings["P300Settings"]["Test"]["StimulusType"]
+            separate_buttons = settings["P300Settings"]["SeparateButtons"]
+
+        trial_ID = None
+        if stim_type == 1:
+            trial_ID = 4
+            return trial_ID
+        if stim_type == 2:
+            trial_ID = 5
+            return trial_ID
+        
+        if separate_buttons:
+            trial_ID = 6
+            return trial_ID
+        
+        if num_cols == 7:
+            trial_ID = 1
+        elif num_cols == 3:
+            trial_ID = 2
+        elif num_cols == 5:
+            trial_ID = 3
+
+        else:
+            print("Trial ID could not be determined.")
+
+        return trial_ID
+
+    def print_results(self):
+        print("Prediction Accuracies:")
+        for i in range(len(self.prediction_accuracies)):
+            print(f"{self.prediction_accuracies[i]:.2f}%")
+
+        print("\nTrial IDs:")
+        for i in range(len(self.trial_IDs)):
+            print(self.trial_IDs[i])
+
+        print("\nTrial Descriptions:")
+        for i in range(len(self.trial_IDs)):
+            print(self.trial_ID_dict[self.trial_IDs[i]])
+
 def main():
-    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250407_Participant_1_Data/EEG_Data" # Path to the folder containing the data
+    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250416_Participant_4_Data" # Path to the folder containing the data
     target_stream_name = "TargetElementStream_VirtualPlay"
     boccia_data_analysis = BocciaDataAnalysis(folder_path, target_stream_name)
 
-    count = 0
-    for file in boccia_data_analysis.files:
-        count += 1
-        print("Trial " + str(count) + " results:")
-        boccia_data_analysis.process_streams(file)
+    for trial_number in boccia_data_analysis.trial_data:
+        boccia_data_analysis.process_trial(trial_number)
 
-    print("Prediction Accuracies: ")
-    for i in range(len(boccia_data_analysis.prediction_accuracies)):
-        print(f"Trial {i+1}: {boccia_data_analysis.prediction_accuracies[i]:.2f}%")
+    boccia_data_analysis.print_results()
 
 if __name__ == "__main__":
     main()
