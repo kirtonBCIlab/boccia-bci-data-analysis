@@ -7,6 +7,16 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 
 class BocciaDataAnalysis:
     def __init__(self, folder_path, stream_name):
+        """
+        Initialize BocciaDataAnalysis object.
+
+        Parameters
+        ----------
+        folder_path : str
+            Path to the folder containing the data to analyze
+        stream_name : str
+            Name of the target element stream (if Play or VirtualPlay was used)  
+        """
         self.folder_path = folder_path
         self.eeg_files = None
         self.trial_settings_files = None
@@ -32,6 +42,18 @@ class BocciaDataAnalysis:
         self.trial_IDs = []
 
     def initialize_trial_dict(self):
+        """
+        Initialize a dictionary mapping trial IDs to descriptions.
+        
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        trial_dict : dict
+            Dictionary mapping trial IDs to descriptions
+        """
         trial_dict = {
             1: "Fan segments 7x5",
             2: "Fan segments 3x3",
@@ -43,6 +65,21 @@ class BocciaDataAnalysis:
         return trial_dict
     
     def get_trial_data(self):
+        """
+        Get trial data and organize it based on trial number.
+
+        This method retrieves EEG data and trial settings files. 
+        It pairs an EEG file with its corresponding trial settings file based on trial number.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        trial_data : dict
+            Dictionary mapping trial numbers to trial data 
+        """
         self.eeg_files = self.retrieve_eeg_files()
         self.trial_settings_files = self.retrieve_trial_settings_files()
         
@@ -56,6 +93,18 @@ class BocciaDataAnalysis:
         return trial_data
     
     def retrieve_eeg_files(self):
+        """
+        Retrieve EEG data files from the folder path.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        eeg_files : dict
+            Dictionary mapping trial numbers to EEG data file paths
+        """
         eeg_files = {}
         with os.scandir(self.folder_path) as entries:
             for entry in entries:
@@ -67,6 +116,18 @@ class BocciaDataAnalysis:
         return eeg_files
     
     def retrieve_trial_settings_files(self):
+        """
+        Retrieve trial settings files from the folder path.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        trial_settings : dict
+            Dictionary mapping trial numbers to trial settings file paths
+        """
         trial_settings = {}
         with os.scandir(self.folder_path) as entries:
             for entry in entries:
@@ -78,6 +139,20 @@ class BocciaDataAnalysis:
         return trial_settings
     
     def process_trial(self, trial_number):
+        """
+        Process a single trial.
+        Calls the process_streams method to process the LSL streams from the EEG data.
+        Calls the process_settings method to process the trial settings file.
+
+        Parameters
+        ----------
+        trial_number : int
+            Trial number
+
+        Returns
+        -------
+        None
+        """
         xdf_file = self.trial_data[trial_number]["eeg_data"]
         self.process_streams(xdf_file)
 
@@ -86,6 +161,18 @@ class BocciaDataAnalysis:
         self.trial_IDs.append(trial_ID)
     
     def process_streams(self, xdf_file):
+        """
+        Process the LSL streams from the EEG data.
+
+        Parameters
+        ----------
+        xdf_file : str
+            Path to the xdf file
+
+        Returns
+        -------
+        None
+        """
         # Load the xdf file
         streams, fileheader = pyxdf.load_xdf(xdf_file)
 
@@ -104,6 +191,23 @@ class BocciaDataAnalysis:
         self.compare_predictions(predicted_targets, target_element_iSPOs)
     
     def get_stream_data(self, streams, stream_name):
+        """
+        Extract data from a specific LSL stream.
+
+        Parameters
+        ----------
+        streams : list
+            List of dictionaries representing the LSL streams
+        stream_name : str
+            Name of the stream to extract data from
+
+        Returns
+        -------
+        stream_markers : list
+            List of markers from the stream
+        stream_time : list
+            List of timestamps from the stream
+        """
         stream_index = next((i for i, stream in enumerate(streams) if stream_name in stream['info']['name'][0]), None)
         # print(f"Stream {stream_index}: {streams[stream_index]['info']['name'][0]}")
         stream = streams[stream_index]
@@ -114,10 +218,36 @@ class BocciaDataAnalysis:
         return stream_markers, stream_time
     
     def get_target_elements(self, target_markers):
+        """
+        Extract target numbers from target element stream.
+
+        Parameters
+        ----------
+        target_markers : list
+            List of markers from the target element stream
+
+        Returns
+        -------
+        target_elements : list
+            List of target numbers extracted from the stream
+        """
         target_elements = [int(item[1].split(": ")[1]) for item in target_markers]
         return target_elements
     
     def get_predictions(self, python_response_markers):
+        """
+        Extract predictions from Python response stream.
+
+        Parameters
+        ----------
+        python_response_markers : list
+            List of markers from the Python response stream
+
+        Returns
+        -------
+        predicted_targets : list
+            List of predicted target numbers extracted from the stream
+        """
         # Extract predictions from Python response stream by removing 'ping' and 'marker received' messages
         extracted_predictions = [
             s for sublist in python_response_markers for s in sublist
@@ -128,6 +258,21 @@ class BocciaDataAnalysis:
         return predicted_targets
 
     def compare_predictions(self, predicted_targets, target_element_iSPOs):
+        """
+        Compare predicted targets to actual targets.
+        Prints confusion matrix and accuracy if print_confusion_matrix is True.
+
+        Parameters
+        ----------
+        predicted_targets : list
+            List of predicted targets
+        target_element_iSPOs : list
+            List of actual targets
+
+        Returns
+        -------
+        None
+        """
         # Make sure number of predictions matches number of actual targets
         assert len(predicted_targets) == len(target_element_iSPOs)
 
@@ -148,6 +293,19 @@ class BocciaDataAnalysis:
         self.prediction_accuracies.append(accuracy)
 
     def process_settings(self, settings_file):
+        """
+        Process the trial settings JSON file to determine the trial ID.
+        
+        Parameters
+        ----------
+        settings_file : str
+            Path to the trial settings JSON file
+
+        Returns
+        -------
+        trial_ID : int
+            Trial ID
+        """
         with open(settings_file, 'r') as f:
             # Load the JSON file
             settings = json.load(f)
@@ -182,6 +340,17 @@ class BocciaDataAnalysis:
         return trial_ID
 
     def print_results(self):
+        """
+        Print the results of the data analysis.
+        
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         print("Prediction Accuracies:")
         for i in range(len(self.prediction_accuracies)):
             print(f"{self.prediction_accuracies[i]:.2f}%")
@@ -195,7 +364,7 @@ class BocciaDataAnalysis:
             print(self.trial_ID_dict[self.trial_IDs[i]])
 
 def main():
-    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250416_Participant_4_Data" # Path to the folder containing the data
+    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250423_Participant_1_Data_Electrode" # Path to the folder containing the data
     target_stream_name = "TargetElementStream_VirtualPlay"
     boccia_data_analysis = BocciaDataAnalysis(folder_path, target_stream_name)
 
