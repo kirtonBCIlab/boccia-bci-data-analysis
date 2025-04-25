@@ -390,7 +390,7 @@ class BocciaDataAnalysis:
 
 def main():
     # Path to the folder containing the data to analyze
-    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250423_Participant_1_Data_Electrode"
+    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250423_Participant_1_Data"
 
     # Name of the target element stream: "TargetElementStream_Play" or "TargetElementStream_VirtualPlay"
     # Depending on whether Play Boccia or Virtual Play mode was used when collecting the data
