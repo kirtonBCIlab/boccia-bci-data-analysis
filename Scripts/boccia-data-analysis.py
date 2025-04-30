@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pyxdf
 import os
 import re
@@ -21,7 +22,7 @@ class BocciaDataAnalysis:
         self.eeg_files = None # Stores EEG data files
         self.trial_settings_files = None # Stores trial settings files
 
-        self.print_confusion_matrix = True # Flag to print confusion matrix
+        self.print_confusion_matrix = False # Flag to print confusion matrix
         self.trial_count = 0 # Counter for the number of processed trials
 
         # Names of the relevant streams
@@ -45,6 +46,9 @@ class BocciaDataAnalysis:
         
         # Get trial data to process and analyze
         self.trial_data = self.get_trial_data()
+
+        # Initialize results dataframe
+        self.results_df = pd.DataFrame(columns=["Trial Description", "Trial ID", "Prediction Accuracy"])
 
     def initialize_trial_dict(self):
         """
@@ -373,24 +377,62 @@ class BocciaDataAnalysis:
         -------
         None
         """
-        # Print accuracy (percentage of correct predictions) for each trial
-        print("Prediction Accuracies:")
-        for i in range(len(self.prediction_accuracies)):
-            print(f"{self.prediction_accuracies[i]:.2f}%")
+        # Print trial descriptions from the results dataframe
+        print("\nTrial Descriptions:")
+        for i in range(len(self.results_df)):
+            print(self.results_df["Trial Description"][i])
 
         # Print trial IDs for each trial
         print("\nTrial IDs:")
-        for i in range(len(self.trial_IDs)):
-            print(self.trial_IDs[i])
+        for i in range(len(self.results_df)):
+            print(self.results_df["Trial ID"][i])
 
-        # Print trial descriptions using the trial ID dictionary
-        print("\nTrial Descriptions:")
-        for i in range(len(self.trial_IDs)):
-            print(self.trial_ID_dict[self.trial_IDs[i]])
+        # Print accuracy (percentage of correct predictions) for each trial
+        print("\nPrediction Accuracies:")
+        for i in range(len(self.results_df)):
+            print(f"{self.results_df["Prediction Accuracy"][i]:.2f}%")
+        
+    def output_results_dataframe(self):
+        """
+        Store the results to a pandas DataFrame and print it.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        # Create a DataFrame from the results
+        self.results_df["Trial Description"] = [self.trial_ID_dict[trial_ID] for trial_ID in self.trial_IDs]
+        self.results_df["Trial ID"] = self.trial_IDs
+        self.results_df["Prediction Accuracy"] = self.prediction_accuracies
+
+        print("\nResults DataFrame:")
+        print(self.results_df)
+        self.results_df.to_clipboard(index=False, sep="\t")
+
+    def sort_accuracies_by_trial(self):
+        """
+        Order the accuracies by trial ID and print the ordered list.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        sorted_df = self.results_df.sort_values(by="Trial ID")
+        print("\nSorted Accuracies by Trial ID:")
+        for i in range(len(sorted_df)):
+            print(f"{sorted_df["Prediction Accuracy"][i]:.2f}%")
 
 def main():
     # Path to the folder containing the data to analyze
-    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250423_Participant_1_Data"
+    folder_path = "D:/Daniella Bourque/Boccia Validation/Participant-Data/250428_Participant_7_Data"
 
     # Name of the target element stream: "TargetElementStream_Play" or "TargetElementStream_VirtualPlay"
     # Depending on whether Play Boccia or Virtual Play mode was used when collecting the data
@@ -404,7 +446,9 @@ def main():
         boccia_data_analysis.process_trial(trial_number)
 
     # Output the results
-    boccia_data_analysis.print_results()
+    boccia_data_analysis.output_results_dataframe()
+    boccia_data_analysis.sort_accuracies_by_trial()
+    # boccia_data_analysis.print_results()
 
 if __name__ == "__main__":
     main()
