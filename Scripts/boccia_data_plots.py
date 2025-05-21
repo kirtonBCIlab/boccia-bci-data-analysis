@@ -201,14 +201,14 @@ class BocciaDataPlotter:
         data = self.stats_per_condition.copy()
 
         condition_sets = [
-            ([1, 2, 3], "Comparison 1"), # Condition 1, 2, 3
-            ([3, 4, 5], "Comparison 2"), # Condition 3, 4, 5
-            ([3, 6], "Comparison 3") # Condition 3, 6
+            ([1, 2, 3], "Size of Coarse Fan"), # Condition 1, 2, 3
+            ([3, 4, 5], "Stimulus Type"), # Condition 3, 4, 5
+            ([3, 6], "Button Configuration") # Condition 3, 6
         ]
 
         # Three subplots
         fig, ax = plt.subplots(1, 3, figsize=(9, 3), sharey=True)
-        fig.suptitle('Mean Inference Accuracy per Condition', fontsize=20, y = 0.92)
+        # fig.suptitle('Mean Inference Accuracy per Condition', fontsize=20, y = 0.92)
 
         for ax, (condition_indices, subplot_title) in zip(ax, condition_sets):
             subset = data[data['Condition Number'].isin(condition_indices)]
@@ -218,9 +218,10 @@ class BocciaDataPlotter:
             ax.set_xticklabels(subset['Condition Number'])
             ax.set_title(subplot_title)
             ax.set_xlabel("Condition Number")
-            ax.set_ylabel("Mean Accuracy (%)")
 
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
+        fig.text(0.01, 0.5, "Inference Acc. (%) [Mean ± SEM]", va='center', rotation='vertical')
+
+        plt.tight_layout(rect=[0.015, 0, 1, 0.95])
         plt.show()
 
 def main():
