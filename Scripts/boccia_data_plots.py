@@ -218,6 +218,8 @@ class BocciaDataPlotter:
             ax.set_xticklabels(subset['Condition Number'])
             ax.set_title(subplot_title)
             ax.set_xlabel("Condition Number")
+            # Set y range
+            ax.set_ylim(0, 100)
 
         fig.text(0.01, 0.5, "Inference Acc. (%) [Mean ± SEM]", va='center', rotation='vertical')
 
