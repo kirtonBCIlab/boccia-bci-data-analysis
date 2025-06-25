@@ -437,10 +437,10 @@ class BocciaDataAnalysis:
         print(df)
         df.to_clipboard(index=False, sep="\t")
 
-        sorted_df = df.sort_values(by='Trial ID')
+        sorted_df = df.sort_values(by='Trial ID').reset_index(drop=True)
         print("\nSorted Accurcies by Trial ID:")  
-        for i in range(len(sorted_df)):
-            print(f"{sorted_df["Prediction Accuracy (%)"][i]:.2f}%")    
+        for acc in sorted_df["Prediction Accuracy (%)"]:
+            print(f"{acc:.2f}%")    
     
 def main():
     # Create instance of the BocciaDataAnalysis class
