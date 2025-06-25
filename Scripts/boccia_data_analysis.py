@@ -10,30 +10,30 @@ class BocciaDataAnalysis:
     """
     Class for analyzing data collected during Boccia P300 tests.
     """
-    def get_eeg_files(self, folder):
+    def get_xdf_files(self, folder):
         """
-        Retrieve EEG data files from a given folder.
+        Retrieve xdf data files from a given folder.
 
         Parameters
         ----------
         folder : str
-            Path to the folder containing EEG data files
+            Path to the folder containing xdf data files
 
         Returns
         -------
-        eeg_files : dict
-            Dictionary mapping trial numbers to EEG data file paths
+        xdf_files : dict
+            Dictionary mapping trial numbers to xdf file paths
         """
-        # Locate EEG data files from the folder using regular expression
-        eeg_files = {}
+        # Locate xdf files from the folder using regular expression
+        xdf_files = {}
         with os.scandir(folder) as entries:
             for entry in entries:
                 if entry.is_file() and entry.name.endswith(".xdf"):
                     match = re.search(r'run-(\d{3})', entry.name)
                     if match:
                         trial_number = int(match.group(1))
-                        eeg_files[trial_number] = entry.path
-        return eeg_files
+                        xdf_files[trial_number] = entry.path
+        return xdf_files
     
     def get_settings_files(self, folder):
         """
@@ -60,26 +60,26 @@ class BocciaDataAnalysis:
                         settings_files[trial_number] = entry.path
         return settings_files
     
-    def get_complete_trial_data(self, eeg_files, settings_files):
+    def get_complete_trial_data(self, xdf_files, settings_files):
         """
-        Gets a complete set of trial data by matching EEG and settings files by trial number.
+        Gets a complete set of trial data by matching xdf and settings files by trial number.
 
         Parameters
         ----------
-        eeg_files : dict
-            Dictionary mapping trial numbers to EEG data file paths
+        xdf_files : dict
+            Dictionary mapping trial numbers to xdf data file paths
         settings_files : dict
             Dictionary mapping trial numbers to Trial Settings file paths
 
         Returns
         -------
         organized_data : dict
-            Dictionary containing EEG and settings data for each trial, organized by trial number.
+            Dictionary containing xdf and settings data for each trial, organized by trial number.
         """
         trial_data = {}
-        for trial_number in sorted(set(eeg_files.keys()) & set(settings_files.keys())):
+        for trial_number in sorted(set(xdf_files.keys()) & set(settings_files.keys())):
             trial_data[trial_number] = {
-                'eeg_file': eeg_files[trial_number],
+                'xdf_file': xdf_files[trial_number],
                 'settings_file': settings_files[trial_number]
             }
 
@@ -161,33 +161,33 @@ class BocciaDataAnalysis:
         }
         return trial_dict
     
-    def load_eeg_file(self, trial_data, trial_number):
+    def load_xdf_file(self, trial_data, trial_number):
         """
-        Load the EEG data file for a specific trial.
+        Load the xdf file for a specific trial.
         
         Parameters
         ----------
         trial_data : dict
-            Dictionary containing EEG and settings data for the trials.
+            Dictionary containing xdf and settings data for the trials.
         trial_number : int
-            The trial number for which to load the EEG data.    
+            The trial number for which to load the xdf data.    
         
         Returns
         -------
-        eeg_file : str
-            Path to the EEG data file for the specified trial.
+        xdf_file : str
+            Path to the xdf file for the specified trial.
         streams : list
-            List of streams in the EEG data file.
+            List of streams in the xdf file.
         """
-        eeg_file = trial_data[trial_number]["eeg_file"]
+        xdf_file = trial_data[trial_number]["xdf_file"]
 
-        streams, _ = pyxdf.load_xdf(eeg_file)
+        streams, _ = pyxdf.load_xdf(xdf_file)
 
-        return eeg_file, streams
+        return xdf_file, streams
     
     def get_stream_data(self, streams, stream_name):
         """
-        Extract data from a specific LSL stream in an EEG data file.
+        Extract data from a specific LSL stream in an xdf file.
 
         Parameters
         ----------
@@ -303,7 +303,7 @@ class BocciaDataAnalysis:
         Parameters
         ----------
         folder_path : str
-            Path to the folder containing EEG data files.
+            Path to the folder containing xdf files.
         target_stream_name : str
             Name of the target element stream.
         predictions_stream_name : str
@@ -313,12 +313,12 @@ class BocciaDataAnalysis:
         -------
 
         """
-        # Get EEG and settings files
-        eeg_files = self.get_eeg_files(folder_path)
+        # Get xdf and settings files
+        xdf_files = self.get_xdf_files(folder_path)
         settings_files = self.get_settings_files(folder_path)
 
         # Get complete trial data
-        trial_data = self.get_complete_trial_data(eeg_files, settings_files)
+        trial_data = self.get_complete_trial_data(xdf_files, settings_files)
 
         # Initialize trial ID dictionary
         trial_ID_dict = self.initialize_trial_ID_dict()
@@ -331,8 +331,8 @@ class BocciaDataAnalysis:
         for trial_number in trial_data.keys():
             print(f"\nProcessing trial {trial_number}")
 
-            # Load EEG data file
-            eeg_file, streams = self.load_eeg_file(trial_data, trial_number)
+            # Load xdf file
+            xdf_file, streams = self.load_xdf_file(trial_data, trial_number)
 
             # Get stream data
             target_stream_markers, _ = self.get_stream_data(streams, target_stream_name)
