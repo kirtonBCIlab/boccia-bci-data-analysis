@@ -7,6 +7,9 @@ import json
 from sklearn.metrics import confusion_matrix, accuracy_score
 
 class BocciaDataAnalysis:
+    """
+    Class for analyzing data collected during Boccia P300 tests.
+    """
     def get_eeg_files(self, folder):
         """
         Retrieve EEG data files from a given folder.

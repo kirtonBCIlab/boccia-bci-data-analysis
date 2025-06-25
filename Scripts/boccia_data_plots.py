@@ -3,7 +3,18 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 class BocciaDataPlotter:
+    """
+    Class to plot results of Boccia data analysis.
+    """
     def __init__(self, file_path):
+        """
+        Initialize the BocciaDataPlotter object.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to the CSV file containing the Boccia data.
+        """
         self.file_path = file_path
         self.boccia_data = None
 
@@ -12,16 +23,40 @@ class BocciaDataPlotter:
         self.participant_average = pd.DataFrame()
 
     def load_data(self):
+        """
+        Load the Boccia data from a CSV file.
+        Stores the data in the `boccia_data` attribute.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         try:
             # Load the data from the CSV file
             self.boccia_data = pd.read_csv(self.file_path)
-            # print(self.boccia_data)  # Display the first few rows of the data
+        # Handle exceptions
         except FileNotFoundError:
             print(f"Error: File not found at {self.file_path}")
         except pd.errors.EmptyDataError:
             print("Error: The file is empty or invalid.")
 
     def handle_missing_data(self):
+        """
+        Handle missing data in the Boccia data.
+        Replaces missing values with 0.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
@@ -30,13 +65,25 @@ class BocciaDataPlotter:
         self.boccia_data.fillna(0, inplace=True)
 
     def calculate_means_and_sem(self):
+        """
+        Calculate means and standard error of the mean (SEM) for accuracy for each condition across all participants.
+        Calculates the average accuracy across all conditions for each participant.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
-            raise ValueError("No data loaded yet.")
+            raise ValueError("No data loaded.")
         
-        # Get condition numbers
+        # Get condition numbers which are the first column
         self.stats_per_condition['Condition Number'] = self.boccia_data.iloc[:, 0]
-        # Calculate mean accuracy for each condition
+        # Calculate mean accuracy for each condition (accuracies are in columns 2-9)
         self.stats_per_condition['Mean'] = self.boccia_data.iloc[:, 2:10].mean(axis=1)
         # Calculate standard error of the mean (SEM) for each condition
         self.stats_per_condition['SEM'] = self.boccia_data.iloc[:, 2:10].sem(axis=1)
@@ -47,11 +94,26 @@ class BocciaDataPlotter:
         self.participant_average['Participant'] = range(1, 9)
         self.participant_average['Average Accuracy'] = self.boccia_data.iloc[:, 2:10].mean(axis=0).values
 
-    def plot_accuracy_per_participant(self):
+    def plot_accuracy_per_participant_subplots(self):
+        """
+        Plot the inference accuracy for each participant.
+        Each subplot is the results for one participant.
+        X axis is condition number.
+        Y axis is accuracy.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
 
+        # Create a figure with 2 rows and 4 columns (for 8 participants)
         fig, axes = plt.subplots(2, 4, figsize=(10, 5))
         fig.suptitle('Inference Accuracy for Each Participant', fontsize=16)
 
@@ -67,11 +129,26 @@ class BocciaDataPlotter:
         plt.tight_layout(rect=[0, 0, 1, 0.95])
         plt.show()
 
-    def plot_accuracy_per_condition(self):
+    def plot_accuracy_per_condition_subplots(self):
+        """
+        Plot the inference accuracy for each condition.
+        Each subplot is the results for one condition.
+        X axis is participant number.
+        Y axis is accuracy.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
 
+        # Create a figure with 2 rows and 3 columns (for 6 conditions)
         fig, axes = plt.subplots(2, 3, figsize=(10, 5))
         fig.suptitle('Inference Accuracy for Each Condition', fontsize=16)
 
@@ -91,12 +168,26 @@ class BocciaDataPlotter:
         plt.show()
 
     def plot_participant_accuracy_single_plot(self):
+        """
+        Plot the inference accuracy for each condition per participant in a single plot.
+        (Instead of one subplot per participant.)
+        X axis is participant number.
+        Y axis is accuracy.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
 
         fig, ax = plt.subplots(figsize=(10, 5))
-        fig.suptitle('Boccia Validation Inference Accuracy per Participant', fontsize=16)
+        fig.suptitle('Inference Accuracy per Condition per Participant', fontsize=16)
 
         num_participants = len(self.boccia_data.columns[2:10])
         num_conditions = len(self.boccia_data)
@@ -123,6 +214,20 @@ class BocciaDataPlotter:
         plt.show()
 
     def plot_condition_accuracy_single_plot(self):
+        """
+        Plot the inference accuracy for each participant per condition in a single plot.
+        (Instead of one subplot per condition.)
+        X axis is condition number.
+        Y axis is accuracy.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
@@ -158,7 +263,18 @@ class BocciaDataPlotter:
         plt.tight_layout(rect=[0, 0, 1, 0.95])
         plt.show()
 
-    def plot_accuracy_per_condition(self):
+    def plot_average_condition_accuracy(self):
+        """
+        Plot the average inference accuracy across participants for each condition.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if average accuracy is calculated
         if self.stats_per_condition.empty:
             raise ValueError("Average accuracy per condition not calculated yet.")
@@ -174,7 +290,18 @@ class BocciaDataPlotter:
         plt.tight_layout(rect=[0, 0, 1, 0.95])
         plt.show()
 
-    def plot_accuracy_per_participant(self):
+    def plot_average_participant_accuracy(self):
+        """
+        Plot the average inference accuracy across conditions for each participant.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if average accuracy is calculated
         if self.participant_average.empty:
             raise ValueError("Average accuracy per participant not calculated yet.")
@@ -191,6 +318,21 @@ class BocciaDataPlotter:
         plt.show()
 
     def plot_comparisons(self):
+        """
+        Plot the average inference accuracy for conditions for certain comparisons.
+        Comparison:
+        1. Size of Coarse Fan (conditions 1, 2, 3)
+        2. Stimulus Type (conditions 3, 4, 5)
+        3. Button Configuration (conditions 3, 6)
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Check if data is loaded
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
@@ -235,6 +377,15 @@ def main():
     boccia_plotter.handle_missing_data()
 
     boccia_plotter.calculate_means_and_sem()
+
+    boccia_plotter.plot_accuracy_per_condition_subplots()
+    boccia_plotter.plot_accuracy_per_participant_subplots()
+
+    boccia_plotter.plot_average_condition_accuracy()
+    boccia_plotter.plot_average_participant_accuracy()
+
+    boccia_plotter.plot_participant_accuracy_single_plot()
+    boccia_plotter.plot_condition_accuracy_single_plot()
 
     boccia_plotter.plot_comparisons()
 
