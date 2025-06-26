@@ -60,7 +60,7 @@ class BocciaDataAnalysis:
                         settings_files[trial_number] = entry.path
         return settings_files
     
-    def get_complete_trial_data(self, xdf_files, settings_files):
+    def get_complete_trial_data(self, xdf_files, settings_files=None):
         """
         Gets a complete set of trial data by matching xdf and settings files by trial number.
 
@@ -68,20 +68,27 @@ class BocciaDataAnalysis:
         ----------
         xdf_files : dict
             Dictionary mapping trial numbers to xdf data file paths
-        settings_files : dict
+        settings_files : dict *optional, default is None*
             Dictionary mapping trial numbers to Trial Settings file paths
 
         Returns
         -------
         organized_data : dict
-            Dictionary containing xdf and settings data for each trial, organized by trial number.
+            Dictionary containing xdf and optionally settings data for each trial, organized by trial number.
         """
         trial_data = {}
-        for trial_number in sorted(set(xdf_files.keys()) & set(settings_files.keys())):
-            trial_data[trial_number] = {
-                'xdf_file': xdf_files[trial_number],
-                'settings_file': settings_files[trial_number]
-            }
+        if settings_files is not None:
+            for trial_number in sorted(set(xdf_files.keys()) & set(settings_files.keys())):
+                trial_data[trial_number] = {
+                    'xdf_file': xdf_files[trial_number],
+                    'settings_file': settings_files[trial_number]
+                }
+        
+        else:
+            for trial_number in sorted(xdf_files.keys()):
+                trial_data[trial_number] = {
+                    'xdf_file': xdf_files[trial_number]
+                }
 
         return trial_data
     
@@ -296,7 +303,7 @@ class BocciaDataAnalysis:
 
         return accuracy, cm
     
-    def run_analysis(self, folder_path, target_stream_name, predictions_stream_name):
+    def run_analysis(self, folder_path, target_stream_name, predictions_stream_name, process_settings=True):
         """
         Run the complete analysis on the participant data from a given folder.
 
@@ -308,30 +315,39 @@ class BocciaDataAnalysis:
             Name of the target element stream.
         predictions_stream_name : str
             Name of the Python response stream.
+        process_settings : bool *optional, default is True*
+            Whether to process the settings files to determine trial ID and description.
 
         Returns
         -------
 
         """
-        # Get xdf and settings files
+        # Get xdf files
         xdf_files = self.get_xdf_files(folder_path)
-        settings_files = self.get_settings_files(folder_path)
 
-        # Get complete trial data
-        trial_data = self.get_complete_trial_data(xdf_files, settings_files)
+        if process_settings:
+            # Get settings files
+            settings_files = self.get_settings_files(folder_path)
 
-        # Initialize trial ID dictionary
-        trial_ID_dict = self.initialize_trial_ID_dict()
+            # Initialize trial ID dictionary
+            trial_ID_dict = self.initialize_trial_ID_dict()
+
+            # Get complete trial data with settings files included
+            trial_data = self.get_complete_trial_data(xdf_files, settings_files)
+
+            trial_IDs = []
+            trial_descriptions = []
+        
+        else:
+            # Get trial data with xdf files only
+            trial_data = self.get_complete_trial_data(xdf_files)
 
         accuracies = []
-        trial_IDs = []
-        trial_descriptions = []
-
         # Process each trial based on trial number
         for trial_number in trial_data.keys():
             print(f"\nProcessing trial {trial_number}")
 
-            # Load xdf file
+            # Load streams from the xdf file
             xdf_file, streams = self.load_xdf_file(trial_data, trial_number)
 
             # Get stream data
@@ -352,14 +368,23 @@ class BocciaDataAnalysis:
             # self.print_cm(cm, accuracy, trial_number)
             accuracies.append(accuracy)
 
-            # Process settings file to get the trial ID and description
-            trial_ID = self.process_settings_file(trial_data[trial_number]["settings_file"])
-            trial_IDs.append(trial_ID)
-            trial_descriptions.append(trial_ID_dict[trial_ID])
+            if process_settings:
+                # Process settings file to get the trial ID and description
+                trial_ID = self.process_settings_file(trial_data[trial_number]["settings_file"])
+                trial_IDs.append(trial_ID)
+                trial_descriptions.append(trial_ID_dict[trial_ID])
 
-        # self.print_results(trial_descriptions, trial_IDs, accuracies)
+        # Output results
+        if process_settings:
+            # Print results
+            # self.print_results(trial_descriptions, trial_IDs, accuracies)
 
-        self.results_dataframe(trial_descriptions, trial_IDs, accuracies)
+            # Create the results DataFrame
+            self.results_dataframe(trial_descriptions, trial_IDs, accuracies)
+
+        else:
+            # Only output accuracy results
+            self.print_results(accuracies=accuracies)
 
     def print_cm(self, cm, accuracy, trial_number):
         """
@@ -380,34 +405,37 @@ class BocciaDataAnalysis:
         print(cm)
         print(f"Accuracy: {accuracy:.2f}%\n")
 
-    def print_results(self, trial_descriptions, trial_IDs, accuracies):
+    def print_results(self, trial_descriptions=None, trial_IDs=None, accuracies=None):
         """
         Print the results of the analysis.
 
         Parameters
         ----------
-        trial_descriptions : list
+        trial_descriptions : list *optional*
             List of trial descriptions.
-        trial_IDs : list
+        trial_IDs : list *optional*
             List of trial IDs.
-        accuracies : list
+        accuracies : list *optional*
             List of accuracies for each trial.
 
         Returns
         -------
         None
         """
-        print("\nTrial Descriptions:")
-        for desc in trial_descriptions:
-            print(desc)
+        if trial_descriptions is not None:
+            print("\nTrial Descriptions:")
+            for desc in trial_descriptions:
+                print(desc)
 
-        print("\nTrial IDs:")
-        for ID in trial_IDs:
-            print(ID)
+        if trial_IDs is not None:
+            print("\nTrial IDs:")
+            for ID in trial_IDs:
+                print(ID)
 
-        print("\nAccuracies:")
-        for acc in accuracies:
-            print(f"{acc:.2f}%")
+        if accuracies is not None:
+            print("\nAccuracies:")
+            for acc in accuracies:
+                print(f"{acc:.2f}%")
 
     def results_dataframe(self, trial_descriptions, trial_IDs, accuracies):
         """
