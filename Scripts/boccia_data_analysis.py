@@ -209,10 +209,7 @@ class BocciaDataAnalysis:
             List of markers from the stream
         stream_time : list
             List of timestamps from the stream
-        """
-        for [s, stream] in enumerate(streams):
-            print(f"Stream {s}: {stream['info']['name'][0]}")
-        
+        """        
         # Find the index of the stream based on its name
         stream_index = next((i for i, stream in enumerate(streams) if stream_name in stream['info']['name'][0]), None)
         # Set the stream of interest
