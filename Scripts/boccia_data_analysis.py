@@ -37,7 +37,7 @@ class BocciaDataAnalysis:
     
     def get_settings_files(self, folder):
         """
-        Retrieve settings files from a given folder.
+        Retrieve trial settings files from a given folder.
 
         Parameters
         ----------
@@ -62,7 +62,7 @@ class BocciaDataAnalysis:
     
     def get_complete_trial_data(self, xdf_files, settings_files=None):
         """
-        Gets a complete set of trial data by matching xdf and settings files by trial number.
+        Gets trial data by matching xdf and optionally settings files to trial number.
 
         Parameters
         ----------
@@ -94,7 +94,7 @@ class BocciaDataAnalysis:
     
     def process_settings_file(self, settings_file):
         """
-        Process the trial settings JSON file to determine the trial ID.
+        Processes a single trial settings JSON file to determine the trial ID.
         
         Parameters
         ----------
@@ -210,6 +210,9 @@ class BocciaDataAnalysis:
         stream_time : list
             List of timestamps from the stream
         """
+        for [s, stream] in enumerate(streams):
+            print(f"Stream {s}: {stream['info']['name'][0]}")
+        
         # Find the index of the stream based on its name
         stream_index = next((i for i, stream in enumerate(streams) if stream_name in stream['info']['name'][0]), None)
         # Set the stream of interest
@@ -407,7 +410,8 @@ class BocciaDataAnalysis:
 
     def print_results(self, trial_descriptions=None, trial_IDs=None, accuracies=None):
         """
-        Print the results of the analysis.
+        Print the results of the analysis:
+        Prints the trial descriptions, trial IDs, and accuracies depending on which parameters are provided.
 
         Parameters
         ----------
@@ -481,7 +485,7 @@ def main():
     target_stream_name = "TargetElementStream_VirtualPlay"
     predictions_stream_name = "PythonResponse"
 
-    analysis.run_analysis(folder_path, target_stream_name, predictions_stream_name)
+    analysis.run_analysis(folder_path, target_stream_name, predictions_stream_name, process_settings=True)
 
 if __name__ == "__main__":
     main()

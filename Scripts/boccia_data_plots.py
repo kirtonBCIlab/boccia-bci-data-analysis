@@ -19,8 +19,8 @@ class BocciaDataPlotter:
         self.boccia_data = None
 
         # Initialize empty DataFrames for average accuracy
-        self.stats_per_condition = pd.DataFrame()
-        self.participant_average = pd.DataFrame()
+        self.condition_mean_and_sem = pd.DataFrame()
+        self.participant_mean = pd.DataFrame()
 
     def load_data(self):
         """
@@ -82,17 +82,17 @@ class BocciaDataPlotter:
             raise ValueError("No data loaded.")
         
         # Get condition numbers which are the first column
-        self.stats_per_condition['Condition Number'] = self.boccia_data.iloc[:, 0]
+        self.condition_mean_and_sem['Condition Number'] = self.boccia_data.iloc[:, 0]
         # Calculate mean accuracy for each condition (accuracies are in columns 2-9)
-        self.stats_per_condition['Mean'] = self.boccia_data.iloc[:, 2:10].mean(axis=1)
+        self.condition_mean_and_sem['Mean'] = self.boccia_data.iloc[:, 2:10].mean(axis=1)
         # Calculate standard error of the mean (SEM) for each condition
-        self.stats_per_condition['SEM'] = self.boccia_data.iloc[:, 2:10].sem(axis=1)
+        self.condition_mean_and_sem['SEM'] = self.boccia_data.iloc[:, 2:10].sem(axis=1)
 
-        print(self.stats_per_condition)  # Display the calculated means and SEMs
+        print(self.condition_mean_and_sem)  # Display the calculated means and SEMs
 
         # Calculate the average accuracy for each participant
-        self.participant_average['Participant'] = range(1, 9)
-        self.participant_average['Average Accuracy'] = self.boccia_data.iloc[:, 2:10].mean(axis=0).values
+        self.participant_mean['Participant'] = range(1, 9)
+        self.participant_mean['Average Accuracy'] = self.boccia_data.iloc[:, 2:10].mean(axis=0).values
 
     def plot_accuracy_per_participant_subplots(self):
         """
@@ -276,13 +276,13 @@ class BocciaDataPlotter:
         None
         """
         # Check if average accuracy is calculated
-        if self.stats_per_condition.empty:
+        if self.condition_mean_and_sem.empty:
             raise ValueError("Average accuracy per condition not calculated yet.")
 
         fig, ax = plt.subplots(figsize=(7, 5))
         fig.suptitle('Average Inference Accuracy per Condition', fontsize=20, y = 0.92)
 
-        ax.bar(self.stats_per_condition['Condition Number'], self.stats_per_condition['Mean'])
+        ax.bar(self.condition_mean_and_sem['Condition Number'], self.condition_mean_and_sem['Mean'])
         ax.set_xlabel("Condition Number", fontsize=16)
         ax.set_ylabel("Average Accuracy (%)", fontsize=16)
         ax.set_ylim(0, 100)
@@ -303,13 +303,13 @@ class BocciaDataPlotter:
         None
         """
         # Check if average accuracy is calculated
-        if self.participant_average.empty:
+        if self.participant_mean.empty:
             raise ValueError("Average accuracy per participant not calculated yet.")
 
         fig, ax = plt.subplots(figsize=(10, 5))
         fig.suptitle('Average Inference Accuracy per Participant', fontsize=16, y = 0.92)
 
-        ax.bar(self.participant_average['Participant'], self.participant_average['Average Accuracy'])
+        ax.bar(self.participant_mean['Participant'], self.participant_mean['Average Accuracy'])
         ax.set_xlabel("Participant Number")
         ax.set_ylabel("Average Accuracy (%)")
         ax.set_ylim(0, 100)
@@ -319,7 +319,7 @@ class BocciaDataPlotter:
 
     def plot_comparisons(self):
         """
-        Plot the average inference accuracy for conditions for certain comparisons.
+        Plot the average inference accuracy for certain subsets of conditions to draw comparisons.
         Comparison:
         1. Size of Coarse Fan (conditions 1, 2, 3)
         2. Stimulus Type (conditions 3, 4, 5)
@@ -337,10 +337,10 @@ class BocciaDataPlotter:
         if self.boccia_data is None:
             raise ValueError("No data loaded yet.")
         
-        if self.stats_per_condition.empty:
+        if self.condition_mean_and_sem.empty:
             raise ValueError("Means and SEMs not calculated yet.")
         
-        data = self.stats_per_condition.copy()
+        data = self.condition_mean_and_sem.copy()
 
         condition_sets = [
             ([1, 2, 3], "Size of Coarse Fan"), # Condition 1, 2, 3
@@ -376,16 +376,18 @@ def main():
     boccia_plotter.load_data()
     boccia_plotter.handle_missing_data()
 
+    # Calculate means and SEM
     boccia_plotter.calculate_means_and_sem()
 
-    boccia_plotter.plot_accuracy_per_condition_subplots()
+    # Plot
     boccia_plotter.plot_accuracy_per_participant_subplots()
-
-    boccia_plotter.plot_average_condition_accuracy()
-    boccia_plotter.plot_average_participant_accuracy()
+    boccia_plotter.plot_accuracy_per_condition_subplots()
 
     boccia_plotter.plot_participant_accuracy_single_plot()
     boccia_plotter.plot_condition_accuracy_single_plot()
+
+    boccia_plotter.plot_average_condition_accuracy()
+    boccia_plotter.plot_average_participant_accuracy()
 
     boccia_plotter.plot_comparisons()
 
